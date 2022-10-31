@@ -25,68 +25,33 @@ public class Player : MonoBehaviour
         Vector3 forward = transform.TransformDirection(Vector3.forward);
         float curSpeed = speed * Input.GetAxis("Vertical");
         controller.SimpleMove(forward * curSpeed);
-
-        combo_input_handler_system.CaptureComboKeysState();
-        combo_input_handler_system.PrintComboKeysState();
+        var combo_token = combo_input_handler_system.GetComboToken();
+        bool token_empty = ComboInputHandlerSystem.IsTokenEmpty(combo_token);
+        if(!token_empty)
+        {
+            Debug.Log(combo_token);
+        }
     }
 }
 
 public class ComboInputHandlerSystem
 {
-    private ComboKey[] combo_keys;
-    // TODO:
-    // Make a snapshooting function to record combo keys presses per frame
-    // Modify it to only be called when there is some key press, do not record empty tokens
-    // Return such token and collect it into array of tokens (make token another class?)
-    // Make this array hashable type and use it as a a key for Dictionary where values will be functions representing attacks / abilities
-
+    private string[] combo_keys_names;
     public ComboInputHandlerSystem(params string[] combo_keys_names)
     {
-        this.combo_keys = new ComboKey[combo_keys_names.Length];
-        for(int i = 0; i < combo_keys_names.Length; i++)
+        this.combo_keys_names =  combo_keys_names;
+    }
+
+    public Dictionary<string, bool> GetComboToken()
+    {
+        var combo_token = new Dictionary<string, bool>();
+        foreach(string key in this.combo_keys_names)
         {
-            this.combo_keys[i] = new ComboKey(combo_keys_names[i]);
+            combo_token[key] = Input.GetButtonDown(key);
         }
+        return combo_token;
     }
 
-    public void CaptureComboKeysState()
-    {
-        foreach(ComboKey k in this.combo_keys)
-        {
-            k.ReadComboKeyState();
-        }
-    }
-
-    public void PrintComboKeysState()
-    {
-        foreach(ComboKey k in this.combo_keys)
-        {
-            if(k.current_state)
-            {
-                Debug.Log(k);
-            }
-        }
-    }
-}
-public class ComboKey
-{
-    private string name;
-    public bool current_state { get; set; }
-
-    public ComboKey(string name)
-    {
-        this.name = name;
-        this.current_state = false;
-    }
-
-    public void ReadComboKeyState()
-    {
-        this.current_state = Input.GetButtonDown(name);
-    }
-
-    public override string ToString()
-    {
-        return string.Format("{0} - {1}", this.name, this.current_state);
-    }
+    public static bool IsTokenEmpty(Dictionary<string, bool> token) => !token.ContainsValue(true);
 }
 
