@@ -25,8 +25,8 @@ public class Player : MonoBehaviour
         Vector3 forward = transform.TransformDirection(Vector3.forward);
         float curSpeed = speed * Input.GetAxis("Vertical");
         controller.SimpleMove(forward * curSpeed);
-        var combo_token = combo_input_handler_system.GetComboToken();
-        if(!InputMonitorSystem.IsTokenEmpty(combo_token))
+        var combo_token = combo_input_handler_system.GetInputSnapshot();
+        if(!InputMonitorSystem.IsSnapshotEmpty(combo_token))
         {
             Debug.Log(combo_token);
         }
@@ -35,21 +35,21 @@ public class Player : MonoBehaviour
 
 public class InputMonitorSystem
 {
-    private string[] combo_keys_names;
-    public InputMonitorSystem(params string[] combo_keys_names)
+    private string[] monitored_keys_names;
+    public InputMonitorSystem(params string[] monitored_keys_names)
     {
-        this.combo_keys_names =  combo_keys_names;
+        this.monitored_keys_names = monitored_keys_names;
     }
 
-    public Dictionary<string, bool> GetComboToken()
+    public Dictionary<string, bool> GetInputSnapshot()
     {
-        var combo_token = new Dictionary<string, bool>();
-        foreach(string key in this.combo_keys_names)
+        var input_snapshot = new Dictionary<string, bool>();
+        foreach(string key in this.monitored_keys_names)
         {
-            combo_token[key] = Input.GetButtonDown(key);
+            input_snapshot[key] = Input.GetButtonDown(key);
         }
-        return combo_token;
+        return input_snapshot;
     }
 
-    public static bool IsTokenEmpty(Dictionary<string, bool> token) => !token.ContainsValue(true);
+    public static bool IsSnapshotEmpty(Dictionary<string, bool> token) => !token.ContainsValue(true);
 }
