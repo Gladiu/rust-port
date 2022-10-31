@@ -7,7 +7,7 @@ public class Player : MonoBehaviour
 {
     public float speed = 3.0F;
     public float rotateSpeed = 3.0F;
-    private ComboInputHandlerSystem combo_input_handler_system = new ComboInputHandlerSystem(
+    private InputMonitorSystem combo_input_handler_system = new InputMonitorSystem(
         "ComboUp",
         "ComboDown",
         "ComboLeft",
@@ -26,18 +26,17 @@ public class Player : MonoBehaviour
         float curSpeed = speed * Input.GetAxis("Vertical");
         controller.SimpleMove(forward * curSpeed);
         var combo_token = combo_input_handler_system.GetComboToken();
-        bool token_empty = ComboInputHandlerSystem.IsTokenEmpty(combo_token);
-        if(!token_empty)
+        if(!InputMonitorSystem.IsTokenEmpty(combo_token))
         {
             Debug.Log(combo_token);
         }
     }
 }
 
-public class ComboInputHandlerSystem
+public class InputMonitorSystem
 {
     private string[] combo_keys_names;
-    public ComboInputHandlerSystem(params string[] combo_keys_names)
+    public InputMonitorSystem(params string[] combo_keys_names)
     {
         this.combo_keys_names =  combo_keys_names;
     }
@@ -54,4 +53,3 @@ public class ComboInputHandlerSystem
 
     public static bool IsTokenEmpty(Dictionary<string, bool> token) => !token.ContainsValue(true);
 }
-
