@@ -81,33 +81,38 @@ public class SnapshotComparer : IEqualityComparer<Dictionary<string, bool>>
     }
 }
 
-public class Combo
+// do not use combo class as a key to dict with combos
+// Change combo class to combo handler
+// Combo handler will add snapshots to list
+// it will have timer
+// it will also have a list of valid combos
+
+public class ComboHandlerSystem
 {
     public List<Dictionary<string, bool>> combo_sequences { get; set; }
 }
 
-public class ComboComparer : IEqualityComparer<Combo>
+public class ComboSeqComparer : IEqualityComparer<List<Dictionary<string, bool>>>
 {
-    // Must be overriden over object.Equals (strange...)
-    public bool Equals(Combo c1, Combo c2)
+    public bool Equals(List<Dictionary<string, bool>> c1, List<Dictionary<string, bool>> c2)
     {
         if(c1 == c2) return true;
         if((c1 == null) || (c2 == null)) return false;
-        if(c1.combo_sequences.Count != c2.combo_sequences.Count) return false;
+        if(c1.Count != c2.Count) return false;
 
         var snapshot_comparer = new SnapshotComparer();
 
-        for(int i = 0; i < c1.combo_sequences.Count; i++)
+        for(int i = 0; i < c1.Count; i++)
         {
             // Order matters when performing combo
             if(!snapshot_comparer.Equals(
-                c1.combo_sequences[i], c2.combo_sequences[i]))
+                c1[i], c2[i]))
                 return false;
         }
         return true;
     }
 
-    public int GetHashCode(Combo c)
+    public int GetHashCode(List<Dictionary<string, bool>> c)
     {
         return c.GetHashCode();
     }
