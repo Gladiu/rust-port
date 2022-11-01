@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using System;
 
 [RequireComponent(typeof(CharacterController))]
 public class Player : MonoBehaviour
@@ -85,11 +86,51 @@ public class SnapshotComparer : IEqualityComparer<Dictionary<string, bool>>
 // Change combo class to combo handler
 // Combo handler will add snapshots to list
 // it will have timer
-// it will also have a list of valid combos
+// it will also have a list of valid combos?
 
 public class ComboHandlerSystem
 {
     public List<Dictionary<string, bool>> combo_sequences { get; set; }
+    private int snapshot_size;
+    private float combo_input_time;
+    private float timer;
+    // TODO: Change that func signature to something more logical
+    private Dictionary<List<Dictionary<string, bool>>, Func<string>> combos_list;
+
+    public ComboHandlerSystem(int snapshot_size, float combo_input_time)
+    {
+        this.combo_sequences = new List<Dictionary<string, bool>>();
+        this.combos_list = new Dictionary<List<Dictionary<string, bool>>, Func<string>>(new ComboSeqComparer());
+        // TODO: add some valid combos
+        this.snapshot_size = snapshot_size;
+        this.combo_input_time = combo_input_time;
+        this.timer = combo_input_time;
+    }
+
+    public void AddComboSnapshot(Dictionary<string, bool> new_snapshot)
+    {
+        if(new_snapshot.Count != snapshot_size)
+        {
+            string exception_message = String.Format("Provided dictionary has incorrect size. Got {0}, expected {1}", new_snapshot.Count, this.snapshot_size);
+            throw new ArgumentException(exception_message);
+        }
+
+        this.combo_sequences.Add(new_snapshot);
+    }
+
+    public void UpdateComboInputTimer(float dtime) => this.timer -= dtime;
+
+    public Func<string> GetAbilityFromCombo()
+    {
+        if(this.combo_input_time <= 0)
+        {
+            this.timer = 0;
+            Func<string> ability_closure;
+            this.combos_list.TryGetValue(combo_sequences, out ability_closure);
+            return ability_closure;
+        }
+        return null;
+    }
 }
 
 public class ComboSeqComparer : IEqualityComparer<List<Dictionary<string, bool>>>
