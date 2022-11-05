@@ -8,12 +8,13 @@ public class Player : MonoBehaviour
 {
     public float speed = 3.0F;
     public float rotateSpeed = 3.0F;
-    private InputMonitorSystem combo_input_handler_system = new InputMonitorSystem(
+    private InputMonitorSystem combo_input_monitor_system = new InputMonitorSystem(
         "ComboUp",
         "ComboDown",
         "ComboLeft",
         "ComboRight"
         );
+    private ComboHandlerSystem combo_handler_system = new ComboHandlerSystem(4, 1000);
 
     void Update()
     {
@@ -26,10 +27,11 @@ public class Player : MonoBehaviour
         Vector3 forward = transform.TransformDirection(Vector3.forward);
         float curSpeed = speed * Input.GetAxis("Vertical");
         controller.SimpleMove(forward * curSpeed);
-        var combo_token = combo_input_handler_system.GetInputSnapshot();
+        var combo_token = combo_input_monitor_system.GetInputSnapshot();
         if(!InputMonitorSystem.IsSnapshotEmpty(combo_token))
         {
-            Debug.Log(combo_token);
+            combo_handler_system.AddComboSnapshot(combo_token);
+            combo_handler_system.PrintCurrentComboSeq();
         }
     }
 }
@@ -95,13 +97,36 @@ public class ComboHandlerSystem
     private float combo_input_time;
     private float timer;
     // TODO: Change that func signature to something more logical
-    private Dictionary<List<Dictionary<string, bool>>, Func<string>> combos_list;
+    private Dictionary<List<Dictionary<string, bool>>, Func<string>> valid_combos;
 
     public ComboHandlerSystem(int snapshot_size, float combo_input_time)
     {
         this.combo_sequences = new List<Dictionary<string, bool>>();
-        this.combos_list = new Dictionary<List<Dictionary<string, bool>>, Func<string>>(new ComboSeqComparer());
-        // TODO: add some valid combos
+        this.valid_combos = new Dictionary<List<Dictionary<string, bool>>, Func<string>>(new ComboSeqComparer());
+
+        // This is temporary
+        // TODO: make a function loading combos, from file or something?
+        var snap1 = new Dictionary<string, bool>
+        {
+            { "ComboUp", true },
+            { "ComboDown", true },
+            { "ComboLeft", false },
+            { "ComboRight", false }
+        };
+        var snap2 = new Dictionary<string, bool>
+        {
+            { "ComboUp", true },
+            { "ComboDown", true },
+            { "ComboLeft", false },
+            { "ComboRight", false }
+        };
+        var example_combo = new List<Dictionary<string, bool>>
+        {
+            snap1,
+            snap2
+        };
+        // Valid combo would be: jk__, jk__
+
         this.snapshot_size = snapshot_size;
         this.combo_input_time = combo_input_time;
         this.timer = combo_input_time;
@@ -126,10 +151,23 @@ public class ComboHandlerSystem
         {
             this.timer = 0;
             Func<string> ability_closure;
-            this.combos_list.TryGetValue(combo_sequences, out ability_closure);
+            this.valid_combos.TryGetValue(combo_sequences, out ability_closure);
             return ability_closure;
         }
         return null;
+    }
+
+    public void PrintCurrentComboSeq()
+    {
+        foreach(var snap in this.combo_sequences)
+        {
+            foreach(var kvp in snap)
+            {
+                if(kvp.Value)
+                    Debug.Log(String.Format("{0} - {1}", kvp.Key, kvp.Value));
+            }
+            Debug.Log("------------");
+        }
     }
 }
 
