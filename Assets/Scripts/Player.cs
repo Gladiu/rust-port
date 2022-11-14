@@ -32,7 +32,6 @@ public class Player : MonoBehaviour
         {
             var s = inputMonitorSystem.GetSnapshotState();
             Debug.Log(s);
-            inputMonitorSystem.CaptureInputSnapshot();
             inputMonitorSystem.TimerReset();
         }
         inputMonitorSystem.TimerUpdate(Time.deltaTime);
