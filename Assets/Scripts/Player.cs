@@ -7,7 +7,7 @@ public class Player : MonoBehaviour
 {
     public float speed = 3.0F;
     public float rotateSpeed = 3.0F;
-    public InputMonitorSystem inputMonitorSystem = new InputMonitorSystem(Input.GetButton, 2000,
+    public InputMonitorSystem inputMonitorSystem = new InputMonitorSystem(Input.GetButton, 2,
         "ComboUp",
         "ComboDown",
         "ComboLeft",
@@ -27,10 +27,15 @@ public class Player : MonoBehaviour
         controller.SimpleMove(forward * curSpeed);
 
         inputMonitorSystem.CaptureInputSnapshot();
-        if(!inputMonitorSystem.snapshotState.IsSnapshotEmpty())
+
+        if(inputMonitorSystem.TimerTimeout())
         {
-            Debug.Log(inputMonitorSystem.snapshotState);
+            var s = inputMonitorSystem.GetSnapshotState();
+            Debug.Log(s);
+            inputMonitorSystem.CaptureInputSnapshot();
+            inputMonitorSystem.TimerReset();
         }
+        inputMonitorSystem.TimerUpdate(Time.deltaTime);
     }
 }
 
@@ -67,6 +72,21 @@ public class InputMonitorSystem
         // OR operation between values of matching keys
         this.snapshotState.UpdateSnapshot(currentSnapshotState);
     }
+
+    public InputSnapshot GetSnapshotState()
+    {
+        var temp = this.snapshotState;
+        this.snapshotState = new InputSnapshot(this.monitoredKeys);
+        return temp;
+    }
+
+    public bool TimerOn() => this.timer > 0;
+
+    public bool TimerTimeout() => this.timer > this.timeout;
+
+    public void TimerUpdate(float dt)  => this.timer += dt;
+
+    public void TimerReset() => this.timer = 0;
 }
 
 // Simple class wrapping specific dictionary and exposing necessary features
@@ -76,6 +96,15 @@ public class InputSnapshot
     public InputSnapshot(Dictionary<string, bool> snapshotDict)
     {
         this.snapshotDict = snapshotDict;
+    }
+
+    public InputSnapshot(string[] snapshotKeys)
+    {
+        this.snapshotDict = new Dictionary<string, bool>();
+        foreach(var key in snapshotKeys)
+        {
+            snapshotDict.Add(key, false);
+        }
     }
 
     public InputSnapshot(InputSnapshot snapshot)
