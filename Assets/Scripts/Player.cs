@@ -27,9 +27,9 @@ public class Player : MonoBehaviour
         controller.SimpleMove(forward * curSpeed);
 
         inputMonitorSystem.CaptureInputSnapshot();
-        if(!inputMonitorSystem.currentSnapshotState.IsSnapshotEmpty())
+        if(!inputMonitorSystem.snapshotState.IsSnapshotEmpty())
         {
-            Debug.Log(inputMonitorSystem.currentSnapshotState);
+            Debug.Log(inputMonitorSystem.snapshotState);
         }
     }
 }
@@ -38,29 +38,34 @@ public class InputMonitorSystem
 {
     private string[] monitoredKeys { set; get; }
     private Func<string, bool> monitorFunction { set; get; }
-    private float monitorWindow { set; get; }
-    public InputSnapshot currentSnapshotState { set; get; } // State
+    private float timeout { set; get; }
+    private float timer { set; get; }
+    public InputSnapshot snapshotState { set; get; } // State
 
-    public InputMonitorSystem(Func<string, bool> monitorFunction, float monitorWindow, params string[] monitoredKeysNames)
+    public InputMonitorSystem(Func<string, bool> monitorFunction, float timeout, params string[] monitoredKeysNames)
     {
         this.monitorFunction = monitorFunction;
         this.monitoredKeys = monitoredKeysNames;
-        this.monitorWindow = monitorWindow;
+        this.timeout = timeout;
+        this.timer = 0;
 
         var dict = new Dictionary<string, bool>();
         foreach(string key in monitoredKeysNames)
         {
             dict[key] = false;
         }
-        this.currentSnapshotState = new InputSnapshot(dict);
+        this.snapshotState = new InputSnapshot(dict);
     }
 
     public void CaptureInputSnapshot()
     {
+        var currentSnapshotState = new InputSnapshot(new Dictionary<string, bool>());
         foreach(string key in this.monitoredKeys)
         {
             currentSnapshotState.snapshotDict[key] = this.monitorFunction(key);
         }
+        // OR operation between values of matching keys
+        this.snapshotState.UpdateSnapshot(currentSnapshotState);
     }
 }
 
@@ -79,9 +84,15 @@ public class InputSnapshot
     }
 
     // Perform OR operation on boolean values representing key presses
-    public void UpdateSnapshot()
+    public void UpdateSnapshot(InputSnapshot snapshot)
     {
-
+        // Iterate over two dicts that should have the same keys
+        var keys = new List<string>(this.snapshotDict.Keys);
+        foreach(var k in keys)
+        {
+            this.snapshotDict[k] = (snapshot.snapshotDict[k] | this.snapshotDict[k]);
+            // Do not recover from key error, critical error
+        }
     }
 
     public bool IsSnapshotEmpty() => !this.snapshotDict.ContainsValue(true);
