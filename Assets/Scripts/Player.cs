@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System;
+using SnapshotState = System.Int32;
 
 [RequireComponent(typeof(CharacterController))]
 public class Player : MonoBehaviour
@@ -40,42 +41,48 @@ public class Player : MonoBehaviour
 
 public class InputMonitorSystem
 {
-    private string[] monitoredKeys { set; get; }
-    private Func<string, bool> monitorFunction { set; get; }
+    private readonly string[] monitoredKeys;
+    private readonly Func<string, bool> monitorFunction;
     private float timeout { set; get; }
     private float timer { set; get; }
+    private readonly Dictionary<string, int> snapshotKeyIndexMap;
     public InputSnapshot snapshotState { set; get; } // State
 
     public InputMonitorSystem(Func<string, bool> monitorFunction, float timeout, params string[] monitoredKeysNames)
     {
         this.monitorFunction = monitorFunction;
         this.monitoredKeys = monitoredKeysNames;
+
+        var dict = new Dictionary<string, int>();
+        for(int i = 0; i < this.monitoredKeys.Length; i++)
+        {
+            dict.Add(this.monitoredKeys[i], i);
+        }
+        this.snapshotKeyIndexMap = dict;
+        this.snapshotState = new InputSnapshot(this.snapshotKeyIndexMap);
+
         this.timeout = timeout;
         this.timer = 0;
-
-        var dict = new Dictionary<string, bool>();
-        foreach(string key in monitoredKeysNames)
-        {
-            dict[key] = false;
-        }
-        this.snapshotState = new InputSnapshot(dict);
     }
 
     public void CaptureInputSnapshot()
     {
-        var currentSnapshotState = new InputSnapshot(new Dictionary<string, bool>());
+        var currentFrameSnapshotState = new InputSnapshot(this.snapshotKeyIndexMap);
         foreach(string key in this.monitoredKeys)
         {
-            currentSnapshotState.snapshotDict[key] = this.monitorFunction(key);
+            if(this.monitorFunction(key))
+            {
+                currentFrameSnapshotState.SetKeyBitByName(key);
+            }
         }
         // OR operation between values of matching keys
-        this.snapshotState.UpdateSnapshot(currentSnapshotState);
+        this.snapshotState.UpdateSnapshot(currentFrameSnapshotState);
     }
 
     public InputSnapshot GetSnapshotState()
     {
         var temp = this.snapshotState;
-        this.snapshotState = new InputSnapshot(this.monitoredKeys);
+        this.snapshotState = new InputSnapshot(this.snapshotKeyIndexMap);
         return temp;
     }
 
@@ -91,47 +98,91 @@ public class InputMonitorSystem
 // Simple class wrapping specific dictionary and exposing necessary features
 public class InputSnapshot
 {
-    public Dictionary<string, bool> snapshotDict { set; get; }
-    public InputSnapshot(Dictionary<string, bool> snapshotDict)
+    private readonly Dictionary<string, int> snapshotKeyIndexesMap; // Map name of a key to index of a bit in snapshotState
+    private SnapshotState snapshotState; // int in which each bit is state of one of keys, mapped by snapshotKeyIndexesMap
+
+    public InputSnapshot(Dictionary<string, int> snapshotKeyIndexMap)
     {
-        this.snapshotDict = snapshotDict;
+        this.snapshotKeyIndexesMap = snapshotKeyIndexMap;
+        this.snapshotState = 0;
     }
 
-    public InputSnapshot(string[] snapshotKeys)
+    public void SetKeyBitByName(string keyName)
     {
-        this.snapshotDict = new Dictionary<string, bool>();
-        foreach(var key in snapshotKeys)
-        {
-            snapshotDict.Add(key, false);
-        }
+        int index = this.snapshotKeyIndexesMap[keyName];
+        SetKeyBitByIndex(index);
     }
 
-    public InputSnapshot(InputSnapshot snapshot)
+    public void ClearKeyBitByName(string keyName)
     {
-        this.snapshotDict = snapshot.snapshotDict;
+        int index = this.snapshotKeyIndexesMap[keyName];
+        ClearKeyBitByIndex(index);
     }
 
-    // Perform OR operation on boolean values representing key presses
+    public int GetBitByName(string keyName)
+    {
+        int index = this.snapshotKeyIndexesMap[keyName];
+        return GetBitByIndex(index);
+    }
+
+    private void SetKeyBitByIndex(int idx) => this.snapshotState |= (1 << idx);
+
+    private void ClearKeyBitByIndex(int idx) => this.snapshotState &= ~(1 << idx);
+
+    private int GetBitByIndex(int idx) => (this.snapshotState >> idx) & 1;
+
+    // Perform OR operation
     public void UpdateSnapshot(InputSnapshot snapshot)
     {
-        // Iterate over two dicts that should have the same keys
-        var keys = new List<string>(this.snapshotDict.Keys);
-        foreach(var k in keys)
-        {
-            this.snapshotDict[k] = (snapshot.snapshotDict[k] | this.snapshotDict[k]);
-            // Do not recover from key error, critical error
-        }
+        this.snapshotState |= snapshot.snapshotState;
     }
 
-    public bool IsSnapshotEmpty() => !this.snapshotDict.ContainsValue(true);
+    public void UpdateSnapshot(int snapshotState)
+    {
+        this.snapshotState |= snapshotState;
+    }
+
+    public bool IsSnapshotEmpty() => this.snapshotState == 0;
 
     public override string ToString()
     {
         string toPrint = "";
-        foreach(var kvp in this.snapshotDict)
+        foreach(var kvp in this.snapshotKeyIndexesMap)
         {
-            toPrint += String.Format("{0} - {1}\n", kvp.Key, kvp.Value);
+            int bit = GetBitByName(kvp.Key);
+            toPrint += String.Format("Name: {0}, Value: {1}, Index: {2} \n", kvp.Key, bit, kvp.Value);
         }
         return toPrint;
     }
 }
+
+/*
+public class InputSnapshotEqComparer : IEqualityComparer<InputSnapshot>
+{
+    public bool Equals(InputSnapshot s1, InputSnapshot s2)
+    {
+        foreach(var key in s1.snapshotDict.Keys)
+        {
+            if(s1.snapshotDict[key] != s2.snapshotDict[key]) return false;
+        }
+        return true;
+    }
+
+    public int GetHashCode(InputSnapshot s)
+    {
+        // TODO:
+        // Change input snapshot to int constructed from sorted bool values
+        // Pair it with sorted string names of keys (or not? leave sorted strings in inputmonitor)
+        // complexity advantage of 0(1) of hash table is lost if we iterate over keys while inserting
+        // Make functions that will abstract bit access
+        // In loop we can perform bit op with shift operator (smth like variable << (counter))
+        // We can maybe make a dict, that will be used to "key access" bits in the state integer
+        // User can give as arg a name of a key that should be modified, and from dict we could get bit index by which we will then modify the value
+    }
+}
+
+public class ComboKey
+{
+    private List<InputSnapshot> comboKey;
+}
+*/
