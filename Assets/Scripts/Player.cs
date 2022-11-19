@@ -209,11 +209,6 @@ public class InputSnapshot
         this.snapshotState |= snapshot.snapshotState;
     }
 
-    public void UpdateSnapshot(int snapshotState)
-    {
-        this.snapshotState |= snapshotState;
-    }
-
     /// <summary>
     /// Function to determine if the the snapshot is empty (no key was pressed = no state bit is set).
     /// </summary>
