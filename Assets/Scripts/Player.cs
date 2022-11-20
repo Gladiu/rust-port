@@ -33,6 +33,7 @@ public class Player : MonoBehaviour
         if(inputMonitorSystem.TimerTimeout())
         {   // TODO: Rename this GetSnapshotState() method, name collides with InputSnapshot's method and is confusing
             InputSnapshot s = inputMonitorSystem.GetSnapshotState();
+            inputMonitorSystem.ResetSnapshotState();
             if (s.IsSnapshotEmpty()) // Equivalent with end of the combo
             {
                 Debug.Log(combo);
@@ -58,6 +59,7 @@ public class InputMonitorSystem
     private float timeout { set; get; }
     private float timer { set; get; }
     private readonly Dictionary<string, int> snapshotKeyIndexMap;
+    private readonly InputSnapshot snapshotPrototype;
     public InputSnapshot snapshotState { set; get; } // State
 
     /// <summary>
@@ -77,7 +79,9 @@ public class InputMonitorSystem
             dict.Add(this.monitoredKeys[i], i);
         }
         this.snapshotKeyIndexMap = dict;
-        this.snapshotState = new InputSnapshot(this.snapshotKeyIndexMap);
+
+        this.snapshotPrototype = new InputSnapshot(this.snapshotKeyIndexMap);
+        this.snapshotState = this.snapshotPrototype.ShallowCopy();
 
         this.timeout = timeout;
         this.timer = 0;
@@ -104,14 +108,16 @@ public class InputMonitorSystem
 
     /// <summary>
     /// Method that will return <see cref="InputSnapshot"/> object containing recorded key presses from the last time window.
-    /// It will also reset <see cref="InputMonitorSystem.snapshotState"/>.
     /// </summary>
     /// <returns>Object of type <see cref="InputSnapshot"/> containing key presses from the last time window.</returns>
-    public InputSnapshot GetSnapshotState()
+    public InputSnapshot GetSnapshotState() => this.snapshotState;
+
+    public void ResetSnapshotState()
     {
-        InputSnapshot finalSnapshot = this.snapshotState;
-        this.snapshotState = new InputSnapshot(this.snapshotKeyIndexMap);
-        return finalSnapshot;
+        // Uses Prototype Design pattern, now this method is single responsibility
+        // is not coupled with constructor of the InputSnapshot and we are sure
+        // that we get exact same object
+        this.snapshotState = this.snapshotPrototype.ShallowCopy();
     }
 
     /// <summary>
@@ -233,6 +239,11 @@ public class InputSnapshot
     /// </summary>
     /// <returns> Returns <see cref="InputSnapshot.snapshotState"/></returns>
     public int GetSnapshotState() => this.snapshotState;
+
+    public InputSnapshot ShallowCopy()
+    {
+        return (InputSnapshot)this.MemberwiseClone();
+    }
 
     /// <summary>
     /// Override of <see cref="ToString"/> function. Gives clear representation of the <see cref="InputSnapshot"/> object.
