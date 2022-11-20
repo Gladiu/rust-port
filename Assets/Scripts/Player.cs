@@ -14,6 +14,7 @@ public class Player : MonoBehaviour
         "ComboLeft",
         "ComboRight"
     );
+    public ComboSequence combo = new ComboSequence();
 
     void Update()
     {
@@ -30,9 +31,17 @@ public class Player : MonoBehaviour
         inputMonitorSystem.CaptureInputSnapshot();
 
         if(inputMonitorSystem.TimerTimeout())
-        {
-            var s = inputMonitorSystem.GetSnapshotState();
-            Debug.Log(s);
+        {   // TODO: Rename this GetSnapshotState() method, name collides with InputSnapshot's method and is confusing
+            InputSnapshot s = inputMonitorSystem.GetSnapshotState();
+            if (s.IsSnapshotEmpty()) // Equivalent with end of the combo
+            {
+                Debug.Log(combo);
+                combo.ClearComboSequence();
+            }
+            else
+            {
+                combo.AddInputSnapshot(s);
+            }
             inputMonitorSystem.TimerReset();
         }
         inputMonitorSystem.TimerUpdate(Time.deltaTime);
@@ -100,9 +109,9 @@ public class InputMonitorSystem
     /// <returns>Object of type <see cref="InputSnapshot"/> containing key presses from the last time window.</returns>
     public InputSnapshot GetSnapshotState()
     {
-        var temp = this.snapshotState;
+        InputSnapshot finalSnapshot = this.snapshotState;
         this.snapshotState = new InputSnapshot(this.snapshotKeyIndexMap);
-        return temp;
+        return finalSnapshot;
     }
 
     /// <summary>
@@ -200,6 +209,8 @@ public class InputSnapshot
     /// <returns></returns> - state bit value 0 or 1.
     private int GetBitByIndex(int idx) => (this.snapshotState >> idx) & 1;
 
+    public void ClearState() => this.snapshotState = 0;
+
     /// <summary>
     /// Update this <see cref="InputSnapshot"/> object's state with state values from argument. Values are updated with OR operation.
     /// </summary>
@@ -215,10 +226,18 @@ public class InputSnapshot
     /// <returns> true when snapshot is empty and false when it is not. </returns>
     public bool IsSnapshotEmpty() => this.snapshotState == 0;
 
+    public static bool IsSnapshotEmpty(SnapshotState state) => state == 0;
+
+    /// <summary>
+    /// Returns a <see cref="InputSnapshot.snapshotState"/>.
+    /// </summary>
+    /// <returns> Returns <see cref="InputSnapshot.snapshotState"/></returns>
+    public int GetSnapshotState() => this.snapshotState;
+
     /// <summary>
     /// Override of <see cref="ToString"/> function. Gives clear representation of the <see cref="InputSnapshot"/> object.
     /// </summary>
-    /// <returns></returns>
+    /// <returns> String representation of the object. </returns>
     public override string ToString()
     {
         string toPrint = "";
@@ -231,33 +250,66 @@ public class InputSnapshot
     }
 }
 
-/*
-public class InputSnapshotEqComparer : IEqualityComparer<InputSnapshot>
+public class InputSnapshotEqualityComparer : IEqualityComparer<InputSnapshot>
 {
     public bool Equals(InputSnapshot s1, InputSnapshot s2)
     {
-        foreach(var key in s1.snapshotDict.Keys)
-        {
-            if(s1.snapshotDict[key] != s2.snapshotDict[key]) return false;
-        }
-        return true;
+        if(s1.GetSnapshotState() == s2.GetSnapshotState()) return true;
+        return false;
     }
 
     public int GetHashCode(InputSnapshot s)
     {
-        // TODO:
-        // Change input snapshot to int constructed from sorted bool values
-        // Pair it with sorted string names of keys (or not? leave sorted strings in inputmonitor)
-        // complexity advantage of 0(1) of hash table is lost if we iterate over keys while inserting
-        // Make functions that will abstract bit access
-        // In loop we can perform bit op with shift operator (smth like variable << (counter))
-        // We can maybe make a dict, that will be used to "key access" bits in the state integer
-        // User can give as arg a name of a key that should be modified, and from dict we could get bit index by which we will then modify the value
+        // snapshotState is unique int value for all combinations of keys, so it is enough to do that
+        return s.GetSnapshotState().GetHashCode();
     }
 }
 
-public class ComboKey
+public class ComboSequence
 {
-    private List<InputSnapshot> comboKey;
+    public List<InputSnapshot> comboSequence { set; get; }
+
+    public ComboSequence()
+    {
+        this.comboSequence = new List<InputSnapshot>();
+    }
+
+    public void AddInputSnapshot(InputSnapshot snapshot) => this.comboSequence.Add(snapshot);
+
+    public void ClearComboSequence() => this.comboSequence.Clear();
+
+    public override string ToString()
+    {
+        string comboSequenceString = "Combo sequence: \n";
+        for (int i = 0; i < this.comboSequence.Count; i++)
+        {
+            comboSequenceString += String.Format("{0}", this.comboSequence[i].GetSnapshotState());
+            if(i != this.comboSequence.Count - 1) comboSequenceString += "->";
+        }
+        return comboSequenceString;
+    }
 }
-*/
+
+public class ComboSequenceEqualityComparer : IEqualityComparer<ComboSequence>
+{
+    public bool Equals(ComboSequence s1, ComboSequence s2)
+    {
+        if(s1.comboSequence.Count != s2.comboSequence.Count) return false;
+        if(s1.comboSequence.Count == 0 && s2.comboSequence.Count == 0) return true;
+        for (int i = 0; i < s1.comboSequence.Count; i++)
+        {
+            if(s1.comboSequence[i] != s2.comboSequence[i]) return false;
+        }
+        return true;
+    }
+
+    public int GetHashCode(ComboSequence s)
+    {
+        int toHash = 0;
+        for (int i = 0; i < s.comboSequence.Count; i++)
+        {
+            toHash ^= s.comboSequence[i].GetSnapshotState();
+        }
+        return toHash.GetHashCode();
+    }
+}
