@@ -294,7 +294,7 @@ public class ComboSequence
         string comboSequenceString = "Combo sequence: \n";
         for (int i = 0; i < this.Sequence.Count; i++)
         {
-            comboSequenceString += String.Format("{0}", this.Sequence[i].SnapshotState);
+            comboSequenceString += String.Format("{0}", this.Sequence[i]);
             if(i != this.Sequence.Count - 1) comboSequenceString += "->";
         }
         return comboSequenceString;
