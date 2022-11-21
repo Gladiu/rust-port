@@ -54,13 +54,20 @@ public class Player : MonoBehaviour
 /// </summary>
 public class InputMonitorSystem
 {
-    private readonly string[] monitoredKeys;
-    private readonly Func<string, bool> monitorFunction;
-    private float timeout { set; get; }
-    private float timer { set; get; }
-    private readonly Dictionary<string, int> snapshotKeyIndexMap;
-    private readonly InputSnapshot snapshotPrototype;
-    public InputSnapshot snapshotState { set; get; } // State
+    private readonly string[] _monitoredKeys;
+    public string[] MonitoredKeys { get { return _monitoredKeys; } }
+
+    private readonly Func<string, bool> _monitorFunction;
+    public Func<string, bool> MonitorFunction { get { return _monitorFunction; } }
+
+    public float Timeout { set; get; }
+    public float Timer { private set; get; }
+
+    private readonly Dictionary<string, int> _snapshotKeyIndexMap;
+    public Dictionary<string, int> SnapshotKeyIndexMap { get { return _snapshotKeyIndexMap; } }
+
+    private readonly InputSnapshot snapshotPrototype; // Leave it as priv readonly, only accessed inside obj
+    public InputSnapshot SnapshotState { private set; get; } // State
 
     /// <summary>
     /// Constructor.
@@ -70,100 +77,101 @@ public class InputMonitorSystem
     /// <param name="monitoredKeysNames"></param> - Array of key names to be monitored.
     public InputMonitorSystem(Func<string, bool> monitorFunction, float timeout, params string[] monitoredKeysNames)
     {
-        this.monitorFunction = monitorFunction;
-        this.monitoredKeys = monitoredKeysNames;
+        this._monitorFunction = monitorFunction;
+        this._monitoredKeys = monitoredKeysNames;
 
         var dict = new Dictionary<string, int>();
-        for(int i = 0; i < this.monitoredKeys.Length; i++)
+        for(int i = 0; i < this.MonitoredKeys.Length; i++)
         {
-            dict.Add(this.monitoredKeys[i], i);
+            dict.Add(this.MonitoredKeys[i], i);
         }
-        this.snapshotKeyIndexMap = dict;
+        this._snapshotKeyIndexMap = dict;
 
-        this.snapshotPrototype = new InputSnapshot(this.snapshotKeyIndexMap);
-        this.snapshotState = this.snapshotPrototype.ShallowCopy();
+        this.snapshotPrototype = new InputSnapshot(this.SnapshotKeyIndexMap);
+        this.SnapshotState = this.snapshotPrototype.ShallowCopy();
 
-        this.timeout = timeout;
-        this.timer = 0;
+        this.Timeout = timeout;
+        this.Timer = 0;
     }
 
     /// <summary>
     /// Method that will use <see cref="InputMonitorSystem.monitorFunction"/> combined with <see cref="InputMonitorSystem.monitoredKeys"/>
-    /// to record key presses state in the current frame. This method will modify <see cref="InputMonitorSystem.snapshotState"/> with captured
+    /// to record key presses state in the current frame. This method will modify <see cref="InputMonitorSystem.SnapshotState"/> with captured
     /// keys state in the current frame. Values will be OR'ed.
     /// </summary>
     public void CaptureInputSnapshot()
     {
-        var currentFrameSnapshotState = new InputSnapshot(this.snapshotKeyIndexMap);
-        foreach(string key in this.monitoredKeys)
+        var currentFrameSnapshotState = new InputSnapshot(this.SnapshotKeyIndexMap);
+        foreach(string key in this.MonitoredKeys)
         {
-            if(this.monitorFunction(key))
+            if(this.MonitorFunction(key))
             {
                 currentFrameSnapshotState.SetKeyBitByName(key);
             }
         }
         // OR operation between values of matching keys
-        this.snapshotState.UpdateSnapshot(currentFrameSnapshotState);
+        this.SnapshotState.UpdateSnapshot(currentFrameSnapshotState);
     }
 
     /// <summary>
     /// Method that will return <see cref="InputSnapshot"/> object containing recorded key presses from the last time window.
     /// </summary>
     /// <returns>Object of type <see cref="InputSnapshot"/> containing key presses from the last time window.</returns>
-    public InputSnapshot GetSnapshotState() => this.snapshotState;
+    public InputSnapshot GetSnapshotState() => this.SnapshotState;
 
     public void ResetSnapshotState()
     {
         // Uses Prototype Design pattern, now this method is single responsibility
         // is not coupled with constructor of the InputSnapshot and we are sure
         // that we get exact same object
-        this.snapshotState = this.snapshotPrototype.ShallowCopy();
+        this.SnapshotState = this.snapshotPrototype.ShallowCopy();
     }
 
     /// <summary>
     /// Check if timer for current time window is running.
     /// </summary>
     /// <returns> true if timer is running and false if it is not. </returns>
-    public bool TimerOn() => this.timer > 0;
+    public bool TimerOn() => this.Timer > 0;
 
     /// <summary>
     /// Check if timer times out.
     /// </summary>
     /// <returns> true if timer timed out or false if it did not. </returns>
-    public bool TimerTimeout() => this.timer > this.timeout;
+    public bool TimerTimeout() => this.Timer > this.Timeout;
 
     /// <summary>
     /// Update the timer with current delta time of a frame, use <see cref="Input.GetButton(string)"/> or similar to provide delta time.
     /// </summary>
     /// <param name="dt"></param> - delta time in seconds.
-    public void TimerUpdate(float dt)  => this.timer += dt;
+    public void TimerUpdate(float dt)  => this.Timer += dt;
 
     /// <summary>
     /// Reset <see cref="InputSnapshot.timer"/> to 0. Call it after /// <see cref="InputSnapshot.TimerTimeout"/> returns true.
     /// </summary>
-    public void TimerReset() => this.timer = 0;
+    public void TimerReset() => this.Timer = 0;
 }
 
 /// <summary>
-/// Class mostly for storing the pressed keys input state. <see cref="InputSnapshot.snapshotState"/> has a type <see cref="SnapshotState"/> that is just
+/// Class mostly for storing the pressed keys input state. <see cref="InputSnapshot.SnapshotState"/> has a type <see cref="int"/> that is just
 /// an alias for int. Each key state is stored as a bit inside that int (1 for key pressed and 0 for not pressed). In
 /// <see cref="InputSnapshot.snapshotKeyIndexesMap"/> is stored mapping, from keys names to indexes of corresponding
-/// state bits in <see cref="InputSnapshot.snapshotState"/>. This way, we can quickly and efficiently manipulate bits but also use efficient
+/// state bits in <see cref="InputSnapshot.SnapshotState"/>. This way, we can quickly and efficiently manipulate bits but also use efficient
 /// "hash map like" access.
 /// </summary>
 public class InputSnapshot
 {
-    private readonly Dictionary<string, int> snapshotKeyIndexesMap; // Map name of a key to index of a bit in snapshotState
-    private SnapshotState snapshotState; // int in which each bit is state of one of keys, mapped by snapshotKeyIndexesMap
+    private readonly Dictionary<string, int> _snapshotKeyIndexesMap;
+    public Dictionary<string, int> SnapshotKeyIndexesMap { get { return _snapshotKeyIndexesMap; } }
+    public SnapshotState SnapshotState { private set; get; } // int in which each bit is state of one of keys, mapped by snapshotKeyIndexesMap
 
     /// <summary>
     /// Constructor for <see cref="InputSnapshot"/> class. Initializes state to 0 (no key presses) and loads mapping from string key names to state bit indexes.
     /// </summary>
-    /// <param name="snapshotKeyIndexMap"></param> - mapping from string key name to bit index in <see cref="InputSnapshot.snapshotState"/>.
+    /// <param name="snapshotKeyIndexMap"></param> - mapping from string key name to bit index in <see cref="InputSnapshot.SnapshotState"/>.
     public InputSnapshot(Dictionary<string, int> snapshotKeyIndexMap)
     {
-        this.snapshotKeyIndexesMap = snapshotKeyIndexMap;
-        this.snapshotState = 0;
+        this._snapshotKeyIndexesMap = snapshotKeyIndexMap;
+        this.SnapshotState = 0;
     }
 
     /// <summary>
@@ -172,7 +180,7 @@ public class InputSnapshot
     /// <param name="keyName"></param> - key to <see cref="InputSnapshot.snapshotKeyIndexesMap"/> for which state bit will be set.
     public void SetKeyBitByName(string keyName)
     {
-        int index = this.snapshotKeyIndexesMap[keyName];
+        int index = this.SnapshotKeyIndexesMap[keyName];
         SetKeyBitByIndex(index);
     }
 
@@ -182,7 +190,7 @@ public class InputSnapshot
     /// <param name="keyName"></param> - key to <see cref="InputSnapshot.snapshotKeyIndexesMap"/> for which state bit will be cleared.
     public void ClearKeyBitByName(string keyName)
     {
-        int index = this.snapshotKeyIndexesMap[keyName];
+        int index = this.SnapshotKeyIndexesMap[keyName];
         ClearKeyBitByIndex(index);
     }
 
@@ -192,7 +200,7 @@ public class InputSnapshot
     /// <param name="keyName"></param> - key to <see cref="InputSnapshot.snapshotKeyIndexesMap"/> for which state will be returned.
     public int GetBitByName(string keyName)
     {
-        int index = this.snapshotKeyIndexesMap[keyName];
+        int index = this.SnapshotKeyIndexesMap[keyName];
         return GetBitByIndex(index);
     }
 
@@ -200,22 +208,22 @@ public class InputSnapshot
     /// Sets a state bit given the index of it.
     /// </summary>
     /// <param name="idx"></param> - index of bit to set.
-    private void SetKeyBitByIndex(int idx) => this.snapshotState |= (1 << idx);
+    private void SetKeyBitByIndex(int idx) => this.SnapshotState |= (1 << idx);
 
     /// <summary>
     /// Clears a state bit given the index of it.
     /// </summary>
     /// <param name="idx"></param> - index of bit to set.
-    private void ClearKeyBitByIndex(int idx) => this.snapshotState &= ~(1 << idx);
+    private void ClearKeyBitByIndex(int idx) => this.SnapshotState &= ~(1 << idx);
 
     /// <summary>
     /// Returns a state bit given the index of it.
     /// </summary>
     /// <param name="idx"></param> - index of a state bit to return.
     /// <returns></returns> - state bit value 0 or 1.
-    private int GetBitByIndex(int idx) => (this.snapshotState >> idx) & 1;
+    private int GetBitByIndex(int idx) => (this.SnapshotState >> idx) & 1;
 
-    public void ClearState() => this.snapshotState = 0;
+    public void ClearState() => this.SnapshotState = 0;
 
     /// <summary>
     /// Update this <see cref="InputSnapshot"/> object's state with state values from argument. Values are updated with OR operation.
@@ -223,22 +231,14 @@ public class InputSnapshot
     /// <param name="snapshot"></param> - <see cref="InputSnapshot"/> object to update state from.
     public void UpdateSnapshot(InputSnapshot snapshot)
     {
-        this.snapshotState |= snapshot.snapshotState;
+        this.SnapshotState |= snapshot.SnapshotState;
     }
 
     /// <summary>
     /// Function to determine if the the snapshot is empty (no key was pressed = no state bit is set).
     /// </summary>
     /// <returns> true when snapshot is empty and false when it is not. </returns>
-    public bool IsSnapshotEmpty() => this.snapshotState == 0;
-
-    public static bool IsSnapshotEmpty(SnapshotState state) => state == 0;
-
-    /// <summary>
-    /// Returns a <see cref="InputSnapshot.snapshotState"/>.
-    /// </summary>
-    /// <returns> Returns <see cref="InputSnapshot.snapshotState"/></returns>
-    public int GetSnapshotState() => this.snapshotState;
+    public bool IsSnapshotEmpty() => this.SnapshotState == 0;
 
     public InputSnapshot ShallowCopy()
     {
@@ -252,7 +252,7 @@ public class InputSnapshot
     public override string ToString()
     {
         string toPrint = "";
-        foreach(var kvp in this.snapshotKeyIndexesMap)
+        foreach(var kvp in this.SnapshotKeyIndexesMap)
         {
             int bit = GetBitByName(kvp.Key);
             toPrint += String.Format("Name: {0}, Value: {1}, Index: {2} \n", kvp.Key, bit, kvp.Value);
@@ -265,37 +265,37 @@ public class InputSnapshotEqualityComparer : IEqualityComparer<InputSnapshot>
 {
     public bool Equals(InputSnapshot s1, InputSnapshot s2)
     {
-        if(s1.GetSnapshotState() == s2.GetSnapshotState()) return true;
+        if(s1.SnapshotState == s2.SnapshotState) return true;
         return false;
     }
 
     public int GetHashCode(InputSnapshot s)
     {
         // snapshotState is unique int value for all combinations of keys, so it is enough to do that
-        return s.GetSnapshotState().GetHashCode();
+        return s.SnapshotState.GetHashCode();
     }
 }
 
 public class ComboSequence
 {
-    public List<InputSnapshot> comboSequence { set; get; }
+    public List<InputSnapshot> Sequence { private set; get; }
 
     public ComboSequence()
     {
-        this.comboSequence = new List<InputSnapshot>();
+        this.Sequence = new List<InputSnapshot>();
     }
 
-    public void AddInputSnapshot(InputSnapshot snapshot) => this.comboSequence.Add(snapshot);
+    public void AddInputSnapshot(InputSnapshot snapshot) => this.Sequence.Add(snapshot);
 
-    public void ClearComboSequence() => this.comboSequence.Clear();
+    public void ClearComboSequence() => this.Sequence.Clear();
 
     public override string ToString()
     {
         string comboSequenceString = "Combo sequence: \n";
-        for (int i = 0; i < this.comboSequence.Count; i++)
+        for (int i = 0; i < this.Sequence.Count; i++)
         {
-            comboSequenceString += String.Format("{0}", this.comboSequence[i].GetSnapshotState());
-            if(i != this.comboSequence.Count - 1) comboSequenceString += "->";
+            comboSequenceString += String.Format("{0}", this.Sequence[i].SnapshotState);
+            if(i != this.Sequence.Count - 1) comboSequenceString += "->";
         }
         return comboSequenceString;
     }
@@ -305,11 +305,11 @@ public class ComboSequenceEqualityComparer : IEqualityComparer<ComboSequence>
 {
     public bool Equals(ComboSequence s1, ComboSequence s2)
     {
-        if(s1.comboSequence.Count != s2.comboSequence.Count) return false;
-        if(s1.comboSequence.Count == 0 && s2.comboSequence.Count == 0) return true;
-        for (int i = 0; i < s1.comboSequence.Count; i++)
+        if(s1.Sequence.Count != s2.Sequence.Count) return false;
+        if(s1.Sequence.Count == 0 && s2.Sequence.Count == 0) return true;
+        for (int i = 0; i < s1.Sequence.Count; i++)
         {
-            if(s1.comboSequence[i] != s2.comboSequence[i]) return false;
+            if(s1.Sequence[i] != s2.Sequence[i]) return false;
         }
         return true;
     }
@@ -317,9 +317,9 @@ public class ComboSequenceEqualityComparer : IEqualityComparer<ComboSequence>
     public int GetHashCode(ComboSequence s)
     {
         int toHash = 0;
-        for (int i = 0; i < s.comboSequence.Count; i++)
+        for (int i = 0; i < s.Sequence.Count; i++)
         {
-            toHash ^= s.comboSequence[i].GetSnapshotState();
+            toHash ^= s.Sequence[i].SnapshotState;
         }
         return toHash.GetHashCode();
     }
