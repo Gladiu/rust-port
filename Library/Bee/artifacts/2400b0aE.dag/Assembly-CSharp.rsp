@@ -329,6 +329,8 @@
 -r:"Library/Bee/artifacts/2400b0aE.dag/Unity.Services.Core.Analytics.ref.dll"
 -r:"Library/Bee/artifacts/2400b0aE.dag/Unity.Services.Core.Environments.ref.dll"
 -r:"Library/Bee/artifacts/2400b0aE.dag/Unity.Services.Core.ref.dll"
+-r:"Library/Bee/artifacts/2400b0aE.dag/Unity.Sysroot.Linux_x86_64.ref.dll"
+-r:"Library/Bee/artifacts/2400b0aE.dag/Unity.SysrootPackage.Editor.ref.dll"
 -r:"Library/Bee/artifacts/2400b0aE.dag/Unity.TestTools.CodeCoverage.Editor.OpenCover.Model.ref.dll"
 -r:"Library/Bee/artifacts/2400b0aE.dag/Unity.TestTools.CodeCoverage.Editor.OpenCover.Mono.Reflection.ref.dll"
 -r:"Library/Bee/artifacts/2400b0aE.dag/Unity.TestTools.CodeCoverage.Editor.ref.dll"
@@ -336,6 +338,7 @@
 -r:"Library/Bee/artifacts/2400b0aE.dag/Unity.TextMeshPro.ref.dll"
 -r:"Library/Bee/artifacts/2400b0aE.dag/Unity.Timeline.Editor.ref.dll"
 -r:"Library/Bee/artifacts/2400b0aE.dag/Unity.Timeline.ref.dll"
+-r:"Library/Bee/artifacts/2400b0aE.dag/Unity.Toolchain.Linux-x86_64.ref.dll"
 -r:"Library/Bee/artifacts/2400b0aE.dag/Unity.VSCode.Editor.ref.dll"
 -r:"Library/Bee/artifacts/2400b0aE.dag/Unity.VisualScripting.Core.Editor.ref.dll"
 -r:"Library/Bee/artifacts/2400b0aE.dag/Unity.VisualScripting.Core.ref.dll"
@@ -348,6 +351,7 @@
 -r:"Library/Bee/artifacts/2400b0aE.dag/Unity.VisualStudio.Editor.ref.dll"
 -r:"Library/Bee/artifacts/2400b0aE.dag/UnityEditor.UI.ref.dll"
 -r:"Library/Bee/artifacts/2400b0aE.dag/UnityEngine.UI.ref.dll"
+"Assets/Scripts/Enemy.cs"
 "Assets/Scripts/Player.cs"
 -langversion:9.0
 

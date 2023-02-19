@@ -36,6 +36,7 @@
     <ImplicitlyExpandDesignTimeFacades>false</ImplicitlyExpandDesignTimeFacades>
   </PropertyGroup>
   <ItemGroup>
+     <Compile Include="Assets/Scripts/Enemy.cs" />
      <Compile Include="Assets/Scripts/Player.cs" />
     <Reference Include="UnityEngine">
         <HintPath>/opt/UnityEditor/2021.3.11f1/Editor/Data/Managed/UnityEngine/UnityEngine.dll</HintPath>
@@ -670,6 +671,9 @@
     <Reference Include="Unity.VisualStudio.Editor">
         <HintPath>/home/gladiu/Programming/rust-port/Library/ScriptAssemblies/Unity.VisualStudio.Editor.dll</HintPath>
     </Reference>
+    <Reference Include="Unity.Sysroot.Linux_x86_64">
+        <HintPath>/home/gladiu/Programming/rust-port/Library/ScriptAssemblies/Unity.Sysroot.Linux_x86_64.dll</HintPath>
+    </Reference>
     <Reference Include="Unity.Timeline">
         <HintPath>/home/gladiu/Programming/rust-port/Library/ScriptAssemblies/Unity.Timeline.dll</HintPath>
     </Reference>
@@ -688,6 +692,9 @@
     <Reference Include="Unity.TestTools.CodeCoverage.Editor.OpenCover.Mono.Reflection">
         <HintPath>/home/gladiu/Programming/rust-port/Library/ScriptAssemblies/Unity.TestTools.CodeCoverage.Editor.OpenCover.Mono.Reflection.dll</HintPath>
     </Reference>
+    <Reference Include="Unity.Toolchain.Linux-x86_64">
+        <HintPath>/home/gladiu/Programming/rust-port/Library/ScriptAssemblies/Unity.Toolchain.Linux-x86_64.dll</HintPath>
+    </Reference>
     <Reference Include="Unity.VisualScripting.Flow">
         <HintPath>/home/gladiu/Programming/rust-port/Library/ScriptAssemblies/Unity.VisualScripting.Flow.dll</HintPath>
     </Reference>
@@ -703,14 +710,14 @@
     <Reference Include="UnityEngine.UI">
         <HintPath>/home/gladiu/Programming/rust-port/Library/ScriptAssemblies/UnityEngine.UI.dll</HintPath>
     </Reference>
-    <Reference Include="Unity.Services.Core">
-        <HintPath>/home/gladiu/Programming/rust-port/Library/ScriptAssemblies/Unity.Services.Core.dll</HintPath>
+    <Reference Include="Unity.EditorCoroutines.Editor">
+        <HintPath>/home/gladiu/Programming/rust-port/Library/ScriptAssemblies/Unity.EditorCoroutines.Editor.dll</HintPath>
     </Reference>
     <Reference Include="Unity.VisualScripting.Core">
         <HintPath>/home/gladiu/Programming/rust-port/Library/ScriptAssemblies/Unity.VisualScripting.Core.dll</HintPath>
     </Reference>
-    <Reference Include="Unity.EditorCoroutines.Editor">
-        <HintPath>/home/gladiu/Programming/rust-port/Library/ScriptAssemblies/Unity.EditorCoroutines.Editor.dll</HintPath>
+    <Reference Include="Unity.Services.Core">
+        <HintPath>/home/gladiu/Programming/rust-port/Library/ScriptAssemblies/Unity.Services.Core.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Services.Core.Analytics">
         <HintPath>/home/gladiu/Programming/rust-port/Library/ScriptAssemblies/Unity.Services.Core.Analytics.dll</HintPath>
@@ -729,6 +736,9 @@
     </Reference>
     <Reference Include="Unity.VisualScripting.State">
         <HintPath>/home/gladiu/Programming/rust-port/Library/ScriptAssemblies/Unity.VisualScripting.State.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.SysrootPackage.Editor">
+        <HintPath>/home/gladiu/Programming/rust-port/Library/ScriptAssemblies/Unity.SysrootPackage.Editor.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
