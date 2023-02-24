@@ -9,13 +9,19 @@ public class Player : MonoBehaviour
 {
     public float speed = 3.0F;
     public float rotateSpeed = 3.0F;
-    public InputMonitorSystem inputMonitorSystem = new InputMonitorSystem(Input.GetButton, 2,
-        "ComboUp",
-        "ComboDown",
-        "ComboLeft",
-        "ComboRight"
-    );
-    public ComboSequence combo = new ComboSequence();
+    public InputMonitorSystem inputMonitorSystem;
+    public ComboSequence combo;
+
+    void Start()
+    {
+        inputMonitorSystem = new InputMonitorSystem(Input.GetButton, 2,
+            "ComboUp",
+            "ComboDown",
+            "ComboLeft",
+            "ComboRight"
+        );
+        combo = new ComboSequence();
+    }
 
     void Update()
     {
