@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System;
+using System.Linq;
 using SnapshotState = System.Int32;
 
 [RequireComponent(typeof(CharacterController))]
@@ -68,6 +69,7 @@ public class InputMonitorSystem
 
     private readonly InputSnapshot snapshotPrototype; // Leave it as priv readonly, only accessed inside obj
     public InputSnapshot SnapshotState { private set; get; } // State
+
 
     /// <summary>
     /// Constructor.
@@ -158,7 +160,7 @@ public class InputMonitorSystem
 /// state bits in <see cref="InputSnapshot.SnapshotState"/>. This way, we can quickly and efficiently manipulate bits but also use efficient
 /// "hash map like" access.
 /// </summary>
-public class InputSnapshot
+public class InputSnapshot : IEquatable<InputSnapshot>
 {
     private readonly Dictionary<string, int> _snapshotKeyIndexesMap;
     public Dictionary<string, int> SnapshotKeyIndexesMap { get { return _snapshotKeyIndexesMap; } }
@@ -259,6 +261,28 @@ public class InputSnapshot
         }
         return toPrint;
     }
+
+    public bool Equals(InputSnapshot other)
+    {
+        if(other == null) return false;
+        if(this.SnapshotState != other.SnapshotState) return false;
+        if(this.SnapshotKeyIndexesMap.Count != other.SnapshotKeyIndexesMap.Count) return false;
+        // If difference between sets is different than zero
+        if(this.SnapshotKeyIndexesMap.Except(other.SnapshotKeyIndexesMap).Any()) return false;
+        if(this.SnapshotState != other.SnapshotState) return false;
+        return true;
+    }
+
+    //public override bool Equals(System.Object obj)
+    //{
+        //if(!this.GetType().Equals(obj.GetType())) return false;
+        //TODO
+    //}
+
+    public override int GetHashCode()
+    {
+        return base.GetHashCode();
+    }
 }
 
 public class InputSnapshotEqualityComparer : IEqualityComparer<InputSnapshot>
@@ -276,7 +300,7 @@ public class InputSnapshotEqualityComparer : IEqualityComparer<InputSnapshot>
     }
 }
 
-public class ComboSequence
+public class ComboSequence : IEquatable<ComboSequence>
 {
     public List<InputSnapshot> Sequence { private set; get; }
 
@@ -298,6 +322,28 @@ public class ComboSequence
             if(i != this.Sequence.Count - 1) comboSequenceString += "->";
         }
         return comboSequenceString;
+    }
+
+    public bool Equals(ComboSequence other)
+    {
+        if(other == null) return false;
+        if(other.Sequence.Count != this.Sequence.Count) return false;
+        if(other.Sequence.Count == 0 && this.Sequence.Count == 0) return true;
+        for (int i = 0; i < this.Sequence.Count; i++)
+        {
+            if(other.Sequence[i] != this.Sequence[i]) return false;
+        }
+        return true;
+    }
+
+    public override int GetHashCode()
+    {
+        int toHash = 0;
+        for (int i = 0; i < this.Sequence.Count; i++)
+        {
+            toHash ^= this.Sequence[i].SnapshotState;
+        }
+        return toHash.GetHashCode();
     }
 }
 
@@ -322,5 +368,32 @@ public class ComboSequenceEqualityComparer : IEqualityComparer<ComboSequence>
             toHash ^= s.Sequence[i].SnapshotState;
         }
         return toHash.GetHashCode();
+    }
+}
+
+
+public class ComboToActionMap
+{
+    private Dictionary<ComboSequence, Action<string>> _map;
+
+    public ComboToActionMap()
+    {
+        this._map = new Dictionary<ComboSequence, Action<string>>();
+    }
+
+    public void AddNewCombo(ComboSequence key, Action<string> value)
+    {
+        // TODO: Check if there are no 'empty' snapshots, as they mean end of combo
+        this._map.Add(key, value);
+    }
+
+    public void RemoveCombo(ComboSequence key)
+    {
+        this._map.Remove(key);
+    }
+
+    public Action<string> GetActionFromCombo(ComboSequence key)
+    {
+        return this._map[key];
     }
 }
